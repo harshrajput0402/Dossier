@@ -1,0 +1,106 @@
+// Destination: prisma/schema.prisma
+// This replaces the previous version.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  lastResumeId  String? // remembers which resume was picked last time
+
+  accounts     Account[]
+  sessions     Session[]
+  applications Application[]
+  resumes      Resume[]
+
+  createdAt DateTime @default(now())
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+model Application {
+  id              String            @id @default(cuid())
+  userId          String
+  resumeId        String? // which saved resume was used for the AI match
+  company         String
+  role            String
+  jobUrl          String?
+  jobText         String?           @db.Text
+  status          ApplicationStatus @default(APPLIED)
+  matchScore      Int?
+  missingKeywords String[]          @default([])
+  appliedAt       DateTime          @default(now())
+  lastUpdate      DateTime          @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes Note[]
+
+  @@index([userId, status])
+}
+
+model Note {
+  id            String   @id @default(cuid())
+  applicationId String
+  body          String   @db.Text
+  createdAt     DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model Resume {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String // e.g. "Frontend Resume", "Backend Resume"
+  fileName  String?
+  text      String   @db.Text // extracted text, used by the AI matcher
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
