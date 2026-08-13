@@ -1,11 +1,10 @@
 // Destination: src/app/(dashboard)/dashboard/page.tsx
-// This replaces the earlier version — fetches resumes for the picker
-// instead of a single resumeText string.
+// This replaces the earlier version — delegates topbar+search+board to
+// DashboardContent so search state can be shared client-side.
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { KanbanBoard } from "@/components/dashboard/KanbanBoard";
-import { AddApplicationModal } from "@/components/dashboard/AddApplicationModal";
+import { DashboardContent } from "@/components/dashboard/DashboardContent";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -33,18 +32,10 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div>
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Your Applications</h1>
-        <AddApplicationModal
-          resumes={resumes}
-          initialResumeId={user?.lastResumeId}
-        />
-      </div>
-      <p className="mb-7 mt-1 text-sm text-text-soft">
-        Drag a card between columns to update its status.
-      </p>
-      <KanbanBoard initialApplications={serialized} />
-    </div>
+    <DashboardContent
+      initialApplications={serialized}
+      resumes={resumes}
+      initialResumeId={user?.lastResumeId}
+    />
   );
 }

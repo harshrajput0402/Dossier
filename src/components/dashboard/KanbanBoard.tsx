@@ -1,6 +1,8 @@
 // Destination: src/components/dashboard/KanbanBoard.tsx
-// This replaces the earlier version — adds selectedId state and renders
-// ApplicationDetailModal on card click.
+// This replaces the earlier version — adds searchQuery filtering. The
+// filter only affects what's rendered per column; the underlying
+// `applications` state (used for drag logic and optimistic updates)
+// is untouched, so search doesn't interfere with drag-and-drop.
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,6 +19,7 @@ import {
 import { KanbanColumn } from "./KanbanColumn";
 import { ApplicationCard } from "./ApplicationCard";
 import { ApplicationDetailModal } from "./ApplicationDetailModal";
+import { isStale } from "@/lib/stale";
 import type { Application, ApplicationDetail, ApplicationStatus } from "@/types";
 
 const COLUMNS: { id: ApplicationStatus; label: string; dotClass: string }[] = [
@@ -28,8 +31,10 @@ const COLUMNS: { id: ApplicationStatus; label: string; dotClass: string }[] = [
 
 export function KanbanBoard({
   initialApplications,
+  searchQuery = "",
 }: {
   initialApplications: Application[];
+  searchQuery?: string;
 }) {
   const [applications, setApplications] = useState(initialApplications);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -93,6 +98,18 @@ export function KanbanBoard({
 
   const activeApp = applications.find((a) => a.id === activeId) ?? null;
 
+  // filtering happens here, at render — `applications` itself stays the
+  // full, untouched source of truth
+  const q = searchQuery.trim().toLowerCase();
+  const visibleApplications = q
+    ? applications.filter(
+        (a) =>
+          a.company.toLowerCase().includes(q) ||
+          a.role.toLowerCase().includes(q)
+      )
+    : applications;
+  const emptyLabel = q ? "No matches" : "Drop here";
+
   return (
     <>
       <DndContext
@@ -102,16 +119,33 @@ export function KanbanBoard({
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {COLUMNS.map((col) => (
-            <KanbanColumn
-              key={col.id}
-              id={col.id}
-              label={col.label}
-              dotClass={col.dotClass}
-              applications={applications.filter((a) => a.status === col.id)}
-              onCardClick={setSelectedId}
-            />
-          ))}
+          {COLUMNS.map((col) => {
+            let colApps = visibleApplications.filter((a) => a.status === col.id);
+            if (col.id === "APPLIED") {
+              // stale ones (oldest lastUpdate) float to the top so
+              // they're the first thing you see in that column
+              colApps = [...colApps].sort((a, b) => {
+                const aStale = isStale(a) ? 1 : 0;
+                const bStale = isStale(b) ? 1 : 0;
+                if (aStale !== bStale) return bStale - aStale;
+                return (
+                  new Date(a.lastUpdate).getTime() -
+                  new Date(b.lastUpdate).getTime()
+                );
+              });
+            }
+            return (
+              <KanbanColumn
+                key={col.id}
+                id={col.id}
+                label={col.label}
+                dotClass={col.dotClass}
+                applications={colApps}
+                emptyLabel={emptyLabel}
+                onCardClick={setSelectedId}
+              />
+            );
+          })}
         </div>
 
         <DragOverlay>

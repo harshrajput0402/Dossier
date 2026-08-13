@@ -1,7 +1,11 @@
+// Destination: src/app/layout.tsx
+// This replaces the earlier version — ThemeToggle now renders here
+// instead of only in the dashboard layout, so it's present app-wide.
+
 import type { Metadata } from "next";
 import { Space_Mono, Work_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-// @ts-ignore: allow side-effect CSS import when no declaration file is present
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import "./globals.css";
 
 const spaceMono = Space_Mono({
@@ -32,7 +36,10 @@ export default function RootLayout({
       <body
         className={`${spaceMono.variable} ${workSans.variable} font-body`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <ThemeToggle />
+        </ThemeProvider>
       </body>
     </html>
   );

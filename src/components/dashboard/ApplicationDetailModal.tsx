@@ -1,8 +1,10 @@
 // Destination: src/components/dashboard/ApplicationDetailModal.tsx
+// This replaces the earlier version — adds an Edit mode for company,
+// role, and job link.
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Loader2, Trash2, ExternalLink } from "lucide-react";
+import { X, Loader2, Trash2, ExternalLink, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ApplicationDetail, ApplicationStatus } from "@/types";
 
@@ -42,6 +44,13 @@ export function ApplicationDetailModal({
   const [addingNote, setAddingNote] = useState(false);
   const [showFullJob, setShowFullJob] = useState(false);
 
+  // edit mode state
+  const [editing, setEditing] = useState(false);
+  const [editCompany, setEditCompany] = useState("");
+  const [editRole, setEditRole] = useState("");
+  const [editJobUrl, setEditJobUrl] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -65,6 +74,45 @@ export function ApplicationDetailModal({
       cancelled = true;
     };
   }, [id]);
+
+  function startEditing() {
+    if (!app) return;
+    setEditCompany(app.company);
+    setEditRole(app.role);
+    setEditJobUrl(app.jobUrl ?? "");
+    setEditing(true);
+  }
+
+  async function handleSaveEdit() {
+    if (!app) return;
+    if (!editCompany.trim() || !editRole.trim()) {
+      setError("Company and role can't be empty.");
+      return;
+    }
+    setSavingEdit(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/applications/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company: editCompany.trim(),
+          role: editRole.trim(),
+          jobUrl: editJobUrl.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to save changes");
+      const updatedApp = { ...app, ...data };
+      setApp(updatedApp);
+      onUpdated(updatedApp);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
 
   async function handleStatusChange(newStatus: ApplicationStatus) {
     if (!app) return;
@@ -140,17 +188,82 @@ export function ApplicationDetailModal({
           <>
             {/* left: details */}
             <div className="border-b border-border p-7 sm:border-b-0 sm:border-r">
-              <div className="mb-4 flex items-start justify-between">
-                <div>
-                  <div className="mb-1 font-mono text-[11px] uppercase tracking-wide text-accent">
-                    {app.company}
+              <div className="mb-4 flex items-start justify-between gap-3">
+                {editing ? (
+                  <div className="flex-1">
+                    <label className="mb-1 block font-mono text-xs text-text-soft">
+                      Company
+                    </label>
+                    <input
+                      value={editCompany}
+                      onChange={(e) => setEditCompany(e.target.value)}
+                      className="mb-2 w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text"
+                    />
+                    <label className="mb-1 block font-mono text-xs text-text-soft">
+                      Role
+                    </label>
+                    <input
+                      value={editRole}
+                      onChange={(e) => setEditRole(e.target.value)}
+                      className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text"
+                    />
                   </div>
-                  <h2 className="text-lg font-bold">{app.role}</h2>
+                ) : (
+                  <div>
+                    <div className="mb-1 font-mono text-[11px] uppercase tracking-wide text-accent">
+                      {app.company}
+                    </div>
+                    <h2 className="text-lg font-bold">{app.role}</h2>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  {!editing && (
+                    <button
+                      onClick={startEditing}
+                      aria-label="Edit"
+                      className="rounded-md border border-border p-1.5 text-text-soft"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button onClick={onClose} aria-label="Close">
+                    <X className="h-5 w-5 text-text-soft" />
+                  </button>
                 </div>
-                <button onClick={onClose} aria-label="Close">
-                  <X className="h-5 w-5 text-text-soft" />
-                </button>
               </div>
+
+              {editing && (
+                <div className="mb-5">
+                  <label className="mb-1 block font-mono text-xs text-text-soft">
+                    Job link
+                  </label>
+                  <input
+                    value={editJobUrl}
+                    onChange={(e) => setEditJobUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="mb-3 w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={savingEdit}
+                      className="rounded-md bg-accent px-3.5 py-2 font-mono text-[12px] text-white disabled:opacity-60"
+                    >
+                      {savingEdit ? "Saving..." : "Save changes"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditing(false);
+                        setError("");
+                      }}
+                      className="rounded-md border border-border px-3.5 py-2 font-mono text-[12px] text-text-soft"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="mb-5 flex flex-col gap-3">
                 <div>
@@ -186,7 +299,7 @@ export function ApplicationDetailModal({
                   </div>
                 </div>
 
-                {app.jobUrl && (
+                {!editing && app.jobUrl && (
                   <a
                     href={app.jobUrl}
                     target="_blank"
@@ -246,6 +359,10 @@ export function ApplicationDetailModal({
                 )}
               </div>
 
+              {error && (
+                <p className="mb-3 text-sm text-stamp-rejected">{error}</p>
+              )}
+
               <button
                 onClick={handleDelete}
                 disabled={deleting}
@@ -282,8 +399,6 @@ export function ApplicationDetailModal({
                   <p className="text-sm text-text-soft">No notes yet.</p>
                 )}
               </div>
-
-              {error && <p className="mb-3 text-sm text-stamp-rejected">{error}</p>}
 
               <div className="flex flex-col gap-2">
                 <textarea

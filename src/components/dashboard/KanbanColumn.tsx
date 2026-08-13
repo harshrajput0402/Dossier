@@ -1,5 +1,5 @@
 // Destination: src/components/dashboard/KanbanColumn.tsx
-// This replaces the earlier version — adds onCardClick pass-through.
+// This replaces the earlier version — adds emptyLabel prop.
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
@@ -12,12 +12,14 @@ export function KanbanColumn({
   label,
   dotClass,
   applications,
+  emptyLabel = "Drop here",
   onCardClick,
 }: {
   id: string;
   label: string;
   dotClass: string;
   applications: Application[];
+  emptyLabel?: string;
   onCardClick: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -50,7 +52,7 @@ export function KanbanColumn({
         ))}
         {applications.length === 0 && (
           <div className="rounded border border-dashed border-border p-4 text-center text-xs text-text-soft">
-            Drop here
+            {emptyLabel}
           </div>
         )}
       </div>

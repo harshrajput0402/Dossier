@@ -12,6 +12,9 @@ const patchSchema = z.object({
     .optional(),
   matchScore: z.number().min(0).max(100).optional(),
   missingKeywords: z.array(z.string()).optional(),
+  company: z.string().min(1).optional(),
+  role: z.string().min(1).optional(),
+  jobUrl: z.string().url().optional().or(z.literal("")),
 });
 
 async function assertOwnership(id: string, userId: string) {

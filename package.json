@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma migrate deploy && next build",
-     "postinstall": "prisma generate",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
@@ -29,6 +29,7 @@
     "recharts": "^3.10.1",
     "tailwind-merge": "^2.4.0",
     "unpdf": "^1.8.0",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
