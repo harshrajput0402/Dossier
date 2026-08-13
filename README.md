@@ -1,33 +1,20 @@
 # Dossier — job application tracker
 
-## What's built so far
+A modern **AI-powered job application tracking platform** built with Next.js and TypeScript to help streamline and organize the job search process.
 
-- Design tokens (`tailwind.config.ts`, `globals.css`) — the case-file /
-  ink-stamp palette, light + dark, wired through Tailwind + `next-themes`.
-- Prisma schema (`prisma/schema.prisma`) — User/Account/Session (for
-  Auth.js) plus Application and Note, with per-user data isolation.
-- Landing page (`src/app/page.tsx` + `src/components/landing/*`) — fully
-  built out from the mockup: hero, problem cards, how-it-works, AI
-  spotlight, footer CTA.
-- Theme toggle (`src/components/theme/ThemeToggle.tsx`) — bottom-right,
-  clears the mobile bottom nav automatically.
+## ✨ Features
 
-## Not built yet (next steps)
+- 📋 Drag-and-drop **Kanban board** for managing job applications
+- 🤖 **AI-powered resume analysis** using Groq AI
+- 📊 Resume-to-job-description **match scores**
+- 🔍 **Missing keyword detection** and tailored suggestions
+- 📄 Support for **multiple resumes**
+- 📝 Application notes and tracking
+- 📈 Job search analytics
+- 🔐 Secure multi-user authentication
 
-- Auth pages + Auth.js config (`src/lib/auth.ts`, `/login`, `/signup`)
-- Dashboard layout (sidebar + mobile bottom nav) and the kanban board with
-  `@dnd-kit` drag-and-drop
-- `/api/applications` routes (CRUD)
-- `/api/ai/match` route — the Groq call for JD-vs-resume scoring
-- The "Add Application" modal with the AI match panel
+## 🛠️ Tech Stack
 
-## Getting started
+**Next.js 14 · TypeScript · PostgreSQL · Prisma · Auth.js · Tailwind CSS · Groq AI**
 
-```bash
-npm install
-cp .env.local.example .env.local   # fill in DATABASE_URL, AUTH_SECRET, GROQ_API_KEY
-npx prisma migrate dev --name init
-npm run dev
-```
-
-Open http://localhost:3000 — you should see the landing page.
+> 🚧 **Currently under development** — more features, documentation, and improvements coming soon.
