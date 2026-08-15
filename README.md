@@ -62,7 +62,7 @@ Built with Next.js, PostgreSQL, and AI-powered resume matching.
 
 ### 1. Clone and install
 ```bash
-git clone https://github.com/harshrajput0402/Dossier
+git clone https://github.com/harshrajput0402/Dossier.git
 cd dossier
 npm install
 ```
