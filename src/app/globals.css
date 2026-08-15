@@ -75,6 +75,29 @@ body {
   }
 }
  
+/* used by Hero's "live" eyebrow badge dot */
+@keyframes livepulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.5);
+  }
+}
+ 
+/* used by Hero's active pipeline node (the current status) */
+@keyframes ringpulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(178, 58, 46, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 11px rgba(178, 58, 46, 0);
+  }
+}
+ 
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

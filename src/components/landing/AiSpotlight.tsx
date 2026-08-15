@@ -1,8 +1,7 @@
 // Destination: src/components/landing/AiSpotlight.tsx
-// This replaces the earlier version — adds the scan effect, eased
-// count-up, stamped keyword chips, and cascading suggested tweaks
-// (matches the approved preview). Uses the `scan` and `shine` keyframes
-// added to globals.css.
+// Rebuilt from scratch. Single IntersectionObserver trigger, no
+// continuous scroll tracking — the animation-heavy part (count-up, bar
+// fill, staggered chips/tweaks) all runs once, off one clean trigger.
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -14,13 +13,14 @@ const TWEAKS = [
   "Quantify your Socket.IO real-time work.",
   "Call out any CI/CD pipeline experience.",
 ];
+const TARGET_SCORE = 78;
 
 export function AiSpotlight() {
   const panelRef = useRef<HTMLDivElement>(null);
-  const [triggered, setTriggered] = useState(false);
+  const [active, setActive] = useState(false);
   const [score, setScore] = useState(0);
   const [barWidth, setBarWidth] = useState(0);
-  const [scan, setScan] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [shine, setShine] = useState(false);
   const [visibleKw, setVisibleKw] = useState<boolean[]>(
     MISSING.map(() => false)
@@ -32,54 +32,66 @@ export function AiSpotlight() {
   useEffect(() => {
     const el = panelRef.current;
     if (!el) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setTriggered(true);
-          setScan(true);
-          setTimeout(() => {
-            setBarWidth(78);
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
 
-            const target = 78;
+        setActive(true);
+        setScanning(true);
+
+        const timers: ReturnType<typeof setTimeout>[] = [];
+
+        timers.push(
+          setTimeout(() => {
+            setBarWidth(TARGET_SCORE);
+
             const duration = 900;
             const startTime = performance.now();
             function tick(now: number) {
               const t = Math.min(1, (now - startTime) / duration);
               const eased = 1 - Math.pow(1 - t, 3);
-              setScore(Math.round(eased * target));
-              if (t < 1) requestAnimationFrame(tick);
-              else setShine(true);
+              setScore(Math.round(eased * TARGET_SCORE));
+              if (t < 1) {
+                requestAnimationFrame(tick);
+              } else {
+                setShine(true);
+              }
             }
             requestAnimationFrame(tick);
 
-            MISSING.forEach((_, i) =>
-              setTimeout(
-                () =>
+            MISSING.forEach((_, i) => {
+              timers.push(
+                setTimeout(() => {
                   setVisibleKw((prev) => {
                     const next = [...prev];
                     next[i] = true;
                     return next;
-                  }),
-                500 + i * 130
-              )
-            );
-            TWEAKS.forEach((_, i) =>
-              setTimeout(
-                () =>
+                  });
+                }, i * 130)
+              );
+            });
+
+            TWEAKS.forEach((_, i) => {
+              timers.push(
+                setTimeout(() => {
                   setVisibleTweaks((prev) => {
                     const next = [...prev];
                     next[i] = true;
                     return next;
-                  }),
-                1100 + i * 220
-              )
-            );
-          }, 200);
-          observer.disconnect();
-        }
+                  });
+                }, 600 + i * 220)
+              );
+            });
+          }, 200)
+        );
+
+        return () => timers.forEach(clearTimeout);
       },
       { threshold: 0.35 }
     );
+
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -91,7 +103,7 @@ export function AiSpotlight() {
         ref={panelRef}
         className={cn(
           "scroll-mt-20 grid items-center gap-12 rounded-md bg-text p-10 text-bg transition-all duration-700 md:grid-cols-2 md:p-14",
-          triggered ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+          active ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
         )}
       >
         <div>
@@ -108,7 +120,7 @@ export function AiSpotlight() {
         </div>
 
         <div className="relative overflow-hidden rounded-md border border-white/10 bg-white/5 p-5 font-mono">
-          {scan && (
+          {scanning && (
             <div className="pointer-events-none absolute inset-x-0 top-[-20%] h-[40%] animate-[scan_1.4s_ease-in-out_1] bg-gradient-to-b from-transparent via-stamp-applied/20 to-transparent" />
           )}
 
@@ -137,9 +149,10 @@ export function AiSpotlight() {
                 className={cn(
                   "rounded border border-white/20 px-2 py-1 text-[11px] text-surface2 transition-all duration-300",
                   visibleKw[i]
-                    ? `scale-100 opacity-100 ${
+                    ? cn(
+                        "scale-100 opacity-100",
                         i % 2 === 0 ? "rotate-[-2deg]" : "rotate-[2deg]"
-                      }`
+                      )
                     : "scale-125 rotate-[-6deg] opacity-0"
                 )}
               >

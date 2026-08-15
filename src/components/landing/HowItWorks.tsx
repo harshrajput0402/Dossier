@@ -1,6 +1,10 @@
 // Destination: src/components/landing/HowItWorks.tsx
-// This replaces the earlier version — adds a scroll-linked connector line
-// and per-step reveal animation (matches the approved preview).
+// Rebuilt from scratch — simpler and more robust than the previous
+// version. Instead of continuously recalculating the connector line's
+// height on every scroll event (fragile, hard to debug), a single
+// IntersectionObserver triggers the whole reveal once, and CSS
+// transitions (with staggered delays) handle the rest. Visually similar
+// "drawing in" effect, far less error-prone.
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -26,59 +30,29 @@ const STEPS = [
 ];
 
 export function HowItWorks() {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const lineRef = useRef<HTMLDivElement>(null);
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [visibleSteps, setVisibleSteps] = useState<boolean[]>(
-    STEPS.map(() => false)
-  );
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
 
-  // connector line height tracks actual scroll position
   useEffect(() => {
-    function onScroll() {
-      const wrap = wrapRef.current;
-      const line = lineRef.current;
-      if (!wrap || !line) return;
-      const rect = wrap.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const start = vh * 0.85;
-      const end = vh * 0.35;
-      let progress = (start - rect.top) / (rect.height + (start - end));
-      progress = Math.max(0, Math.min(1, progress));
-      line.style.height = `${progress * rect.height}px`;
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    const el = sectionRef.current;
+    if (!el) return;
 
-  // each step reveals individually as it enters view
-  useEffect(() => {
-    const observers: IntersectionObserver[] = [];
-    stepRefs.current.forEach((el, i) => {
-      if (!el) return;
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setVisibleSteps((prev) => {
-              const next = [...prev];
-              next[i] = true;
-              return next;
-            });
-            obs.disconnect();
-          }
-        },
-        { threshold: 0.5 }
-      );
-      obs.observe(el);
-      observers.push(obs);
-    });
-    return () => observers.forEach((o) => o.disconnect());
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setActive(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   return (
     <div className="mx-auto max-w-[1100px] px-8 py-20">
-      <div id="how" className="scroll-mt-20">
+      <div id="how" ref={sectionRef} className="scroll-mt-20">
         <div className="mb-3 font-mono text-xs uppercase tracking-widest text-accent">
           The process
         </div>
@@ -87,32 +61,33 @@ export function HowItWorks() {
           one file.
         </h2>
 
-        <div ref={wrapRef} className="relative pl-2">
+        <div className="relative pl-2">
           <div
-            ref={lineRef}
-            className="absolute left-[26px] top-1.5 w-0.5 bg-accent"
-            style={{ height: 0 }}
+            className="absolute left-[26px] top-1.5 w-0.5 bg-accent transition-[height] duration-[1300ms] ease-out"
+            style={{ height: active ? "calc(100% - 24px)" : "0px" }}
           />
+
           {STEPS.map((s, i) => (
             <div
               key={s.title}
-              ref={(el) => {
-                stepRefs.current[i] = el;
-              }}
               className={cn(
-                "grid grid-cols-[52px_1fr] gap-5 py-5 transition-all duration-500",
-                visibleSteps[i]
+                "grid grid-cols-[52px_1fr] gap-5 py-5 transition-all duration-500 ease-out",
+                active
                   ? "translate-x-0 opacity-100"
                   : "-translate-x-3 opacity-0"
               )}
+              style={{ transitionDelay: active ? `${i * 150}ms` : "0ms" }}
             >
               <div
                 className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-full border-2 bg-surface font-mono text-xs font-bold transition-all duration-300",
-                  visibleSteps[i]
-                    ? "scale-105 border-accent text-accent"
+                  "flex h-9 w-9 items-center justify-center rounded-full border-2 bg-surface font-mono text-xs font-bold transition-colors duration-300",
+                  active
+                    ? "border-accent text-accent"
                     : "border-border text-text-soft"
                 )}
+                style={{
+                  transitionDelay: active ? `${i * 150 + 200}ms` : "0ms",
+                }}
               >
                 {String(i + 1).padStart(2, "0")}
               </div>

@@ -1,10 +1,13 @@
 // Destination: src/app/(auth)/signup/page.tsx
+// This replaces the earlier version — password field now uses
+// PasswordInput (show/hide eye toggle).
 "use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -32,7 +35,6 @@ export default function SignupPage() {
       return;
     }
 
-    // auto-login right after account creation
     await signIn("credentials", { email, password, redirect: false });
     setLoading(false);
     router.push("/dashboard");
@@ -77,13 +79,11 @@ export default function SignupPage() {
           <label className="mb-1 block font-mono text-xs text-text-soft">
             Password
           </label>
-          <input
-            type="password"
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
             required
             minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border border-border bg-surface px-3 py-2.5 text-sm text-text"
           />
           <p className="mt-1 text-xs text-text-soft">At least 8 characters.</p>
         </div>

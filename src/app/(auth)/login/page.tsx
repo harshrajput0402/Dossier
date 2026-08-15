@@ -1,10 +1,13 @@
 // Destination: src/app/(auth)/login/page.tsx
+// This replaces the earlier version — password field now uses
+// PasswordInput (show/hide eye toggle).
 "use client";
 
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,13 +62,7 @@ export default function LoginPage() {
           <label className="mb-1 block font-mono text-xs text-text-soft">
             Password
           </label>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border border-border bg-surface px-3 py-2.5 text-sm text-text"
-          />
+          <PasswordInput value={password} onChange={setPassword} required />
         </div>
         {error && <p className="text-sm text-stamp-rejected">{error}</p>}
         <button
